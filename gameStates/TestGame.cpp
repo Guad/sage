@@ -1,4 +1,5 @@
 #include "TestGame.hpp"
+#include "GameOverState.hpp"
 #include <vector>
 #include <cmath>
 
@@ -11,6 +12,7 @@ struct enemy_state
 {
     sf::Shape *shape;
     int dirx, dirY;
+    bool hasEntered;
 };
 
 player_state player;
@@ -40,7 +42,7 @@ const int enemySpawnRate = 1000;
 
 void createBullet()
 {
-    const int enemyRadius = 2;
+    const int enemyRadius = 5;
     const int enspeed = 500;
 
     sf::CircleShape *shape = new sf::CircleShape(enemyRadius);
@@ -56,7 +58,7 @@ void createBullet()
     shape->setOrigin(enemyRadius, enemyRadius);
     shape->setPosition(player.shape->getPosition());
 
-    enemies.push_back({ shape, dirX, dirY });
+    bullets.push_back({ shape, dirX, dirY });
 }
 
 void updatePlayer()
@@ -74,11 +76,11 @@ void updatePlayer()
 
     player.shape->move(vel);
 
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A))
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D))
     {
         player.shape->rotate(rotSpeed * frameTime.asSeconds());
     }
-    else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D))
+    else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A))
     {
         player.shape->rotate(-rotSpeed * frameTime.asSeconds());
     }
@@ -107,7 +109,7 @@ void createEnemy()
     shape->setOrigin(enemyRadius, enemyRadius);
     shape->setPosition(400 - dirX * 1.5f, 300 - dirY * 1.5f);
 
-    enemies.push_back({ shape, dirX, dirY });
+    enemies.push_back({ shape, dirX, dirY, false });
 }
 
 void updateEnemies()
@@ -118,6 +120,7 @@ void updateEnemies()
         auto pos = enemies[i].shape->getPosition();
         if (enemies[i].shape->getGlobalBounds().intersects(player.shape->getGlobalBounds()))
         {
+            setGameState(new GameOverState("Game Over!"));
             //mainWindow.close();
             // TODO: You lost!
             // TODO: Vidas
@@ -125,11 +128,16 @@ void updateEnemies()
         }
 
         if (pos.x < 0 || pos.x > 900 || pos.y < 0 || pos.y > 700)
-            enemies.erase(enemies.begin() + i);
+        {
+            if (enemies[i].hasEntered)
+                enemies.erase(enemies.begin() + i);
+        }
+        else if (!enemies[i].hasEntered)
+            enemies[i].hasEntered = true;
 
         for (int j = 0; j < bullets.size(); j++)
         {
-            if (bullets[j].shape->getGlobalBounds().intersects(enemies[i].shape->getGlobalBounds()))
+            if (enemies[i].shape->getGlobalBounds().contains(bullets[j].shape->getPosition()))
             {
                 enemies.erase(enemies.begin() + i);
                 bullets.erase(bullets.begin() + j);
@@ -188,7 +196,8 @@ void TestGame::Leave()
     }
 
     enemies.clear();
-
+    bullets.clear();
+    
     delete player.shape;
 }
 

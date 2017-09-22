@@ -8,7 +8,6 @@
 #define INIT_GAME_STATE
 
 #ifdef INIT_GAME_STATE
-#include "gameStates/TestState.hpp"
 #include "gameStates/TestGame.hpp"
 #endif
 
